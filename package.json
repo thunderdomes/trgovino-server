@@ -1,0 +1,11 @@
+{
+  "name": "Stok",
+  "description": "Save Data Stok",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "express": "3.x",
+	"node-schedule" : "0.1.11",
+	"request" : "2.27.0"
+  }
+}
