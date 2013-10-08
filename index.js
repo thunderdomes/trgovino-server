@@ -55,11 +55,43 @@ var getLocalIndexInit = function(){
 		arr.forEach(function(e, i){
 			var row = JSON.parse(e || "null");
 			if(row != null){	
-				row.unshift(date)
+				row.unshift(date);
 				data_simpan.push(row);	
 			}
 		});
 		var sql = "INSERT INTO index_local  VALUES ?";
+		connection.query(sql, [data_simpan], function(err) {
+			if(err){
+				console.log("penyimpanan error : "+err);
+				process.exit(1);
+			}
+		});
+		console.log("data updated");
+	});
+}
+
+var getRegional = function(){
+	request("http://202.53.249.3/mi2/marketInfoData?request=regionalIndexInit", function(error, response, body) {
+		var str = body;
+		var arr = str.split("\n");
+		var data_simpan = [];
+		
+		var now = new Date();
+		var date = now.getFullYear()+'-'+ ('00'+(now.getMonth()+1)).slice (-2) +'-'+ ('00'+now.getDay()).slice (-2);
+		  date += ' '+('00'+now.getHours()).slice(-2)+':'+('00'+now.getMinutes()).slice(-2)+':'+('00'+now.getSeconds()).slice(-2);
+		
+		arr.forEach(function(e, i){
+			var row = JSON.parse(e || "null");
+			var _row = [];
+			if(row != null){	
+				_row = row.data;
+				_row.unshift(row.req);
+				_row.unshift(row.id);
+				_row.unshift(date);
+				data_simpan.push(_row);	
+			}
+		});
+		var sql = "INSERT INTO regional  VALUES ?";
 		connection.query(sql, [data_simpan], function(err) {
 			if(err){
 				console.log("penyimpanan error : "+err);
@@ -76,8 +108,12 @@ var j = new cronJob('00 00 01 * * *', function(){
 
 getData();
 
-var cronLocalIndexInit = new cronJob('*/13 * 9-17 * * 1-5', function(){
+var cronLocalIndexInit = new cronJob('*/10 * 9-17 * * 1-5', function(){
     getLocalIndexInit();
+}, null, true);
+// */20 * 9-17 * * 1-5
+var cronRegional = new cronJob('*/20 * 9-17 * * 1-5', function(){
+    getRegional();
 }, null, true);
 
 app.get('/', function(req, res){
@@ -89,6 +125,15 @@ app.get('/', function(req, res){
 
 app.get('/localIndexInit', function(req, res){
 	connection.query("select * from index_local where reqtime =  (select max(reqtime) from index_local)", function (err, rows, fields) {
+		var body = JSON.stringify(rows || null);
+		res.setHeader('Content-Type', 'application/json');
+		res.setHeader('Content-Length', body.length);
+		res.end(body);
+	});
+});
+
+app.get('/regional', function(req, res){
+	connection.query("select * from regional where reqtime =  (select max(reqtime) from regional)", function (err, rows, fields) {
 		var body = JSON.stringify(rows || null);
 		res.setHeader('Content-Type', 'application/json');
 		res.setHeader('Content-Length', body.length);
